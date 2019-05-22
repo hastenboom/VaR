@@ -14,8 +14,8 @@ weibull <- nlm(weibull_loglik, p = c(1,1), hessian=TRUE)
 
 #-----download necessary datasets
 library(quantmod)
-stocks=c("601818.ss","600015.ss","601009.ss","601998.ss","601169.ss")
-            #光大，华夏，南京，中信，北京
+stocks=c("601398.ss","601288.ss","601988.ss","601939.ss","601328.ss")
+#工商，农业，中行，建设，交通
 selstock=function(stock,begin,end)
 {
   num=length(stock);
@@ -42,7 +42,7 @@ daily=function(x)
 }
 
 data2.re=apply(data1.pir,2,FUN=daily)
-colnames(data2.re)=c("18re","15re","09re","98re","69re")
+colnames(data2.re)=c("1398re","1288re","1988re","1939re","1328re")
 #--------------------------------
 
 #------------------Part two:Calculating VaR applying weibull-----------------------------
@@ -53,31 +53,46 @@ n=nrow(data3.raw)
 wVaR=NA;
 alpha=0.05;
 
-index=NA
-for(i in 1:n)
+x1=data3.raw[,c(1,2)]
+x2=data3.raw[,c(1,3)]
+x3=data3.raw[,c(1,4)]
+x4=data3.raw[,c(1,5)]
+x5=data3.raw[,c(1,6)]
+
+weiVaR=function(x)
 {
-  i=1
-  index[i]=which(data3.raw$date[i]==data2.re$date)
-  re=sort(data2.re$re[(index[i]-90):(index[i]-1)])
-  x=exp(re)
-  
-  weibull_loglik=function(pars)
-    {
-      n=length(x)
-      gamma=pars[1]
-      lambda=pars[2]
-      loglik=sum(dweibull(vec, shape=gamma, scale=lambda, log=TRUE))
-      return(-loglik)
-    }
-  weibull=nlm(weibull_loglik, p = c(1,1), hessian=TRUE)
-  wVaR[i]=log(qweibull(alpha,weibull$pars[1],weibull$pars[2]))
-  
+  index1=NA;index2=NA;
+  for(i in 1:n)
+  {
+      index1[i]=which(x$date[i]==data2.re$date)
+      index2=which(colnames(x)[2]==colnames(data2.re))
+      re=sort(data2.re[(index1[i]-90):(index1[i]-1),index2])
+      y=exp(re)
+      
+      weibull_loglik=function(pars)
+      {
+        n=length(y)
+        gamma=pars[1]
+        lambda=pars[2]
+        loglik=sum(dweibull(y, shape=gamma, scale=lambda, log=TRUE))
+        return(-loglik)
+      }
+      weibull=nlm(weibull_loglik, p = c(1,1), hessian=TRUE)
+      wVaR[i]=log(qweibull(alpha,weibull$estimate[1],weibull$estimate[2]))
+  }
+  return(wVaR)
 }
+VaR1398=weiVaR(x1);x1=data.frame(x1,VaR1398)
+VaR1288=weiVaR(x2);x2=data.frame(x2,VaR1288)
+VaR1988=weiVaR(x3);x3=data.frame(x3,VaR1988)
+VaR1939=weiVaR(x4);x4=data.frame(x4,VaR1939)
+VaR1328=weiVaR(x5);x5=data.frame(x5,VaR1328)
+VaR=data.frame(x1$date,VaR1288,VaR1328,VaR1398,VaR1939,VaR1988)
+colnames(VaR)[1]="date"
+#-----------
 
-
-
-
-
-
-
+#-----------------------Part three:plotting-------------------------
+library(reshape);library(reshape2);library(ggplot2)
+VaR.melt=melt(VaR,id="date")
+ggplot(VaR.melt,aes(x=date,y=value,colour=variable))+geom_line()
 
