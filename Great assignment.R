@@ -1,17 +1,5 @@
 #----------------------------Part one:preparation-----------------------------------
 
-#----------------definiting the Weibull loglikelihood function-----------------------
-x=dat
-weibull_loglik <- function(parm){
-  n <- length(x)
-  gamma <- parm[1]
-  lambda <- parm[2]
-  loglik <- sum(dweibull(vec, shape=gamma, scale=lambda, log=TRUE))
-  return(-loglik)
-}
-weibull <- nlm(weibull_loglik, p = c(1,1), hessian=TRUE)
-#----------------------------------------------------------------------
-
 #-----download necessary datasets
 library(quantmod)
 stocks=c("601398.ss","601288.ss","601988.ss","601939.ss","601328.ss")
@@ -52,12 +40,9 @@ data3.raw=data2.re[data2.re$date>as.Date("2016-05-21"),]
 n=nrow(data3.raw)
 wVaR=NA;
 alpha=0.05;
-
-x1=data3.raw[,c(1,2)]
-x2=data3.raw[,c(1,3)]
-x3=data3.raw[,c(1,4)]
-x4=data3.raw[,c(1,5)]
-x5=data3.raw[,c(1,6)]
+#Xi contains return and VaR later
+x1=data3.raw[,c(1,2)];x2=data3.raw[,c(1,3)];x3=data3.raw[,c(1,4)]
+x4=data3.raw[,c(1,5)];x5=data3.raw[,c(1,6)]
 
 weiVaR=function(x)
 {
@@ -82,6 +67,7 @@ weiVaR=function(x)
   }
   return(wVaR)
 }
+#Xi contains return and VaR
 VaR1398=weiVaR(x1);x1=data.frame(x1,VaR1398)
 VaR1288=weiVaR(x2);x2=data.frame(x2,VaR1288)
 VaR1988=weiVaR(x3);x3=data.frame(x3,VaR1988)
@@ -96,3 +82,9 @@ library(reshape);library(reshape2);library(ggplot2)
 VaR.melt=melt(VaR,id="date")
 ggplot(VaR.melt,aes(x=date,y=value,colour=variable))+geom_line()
 
+#----------------------Part four:back testing---------------------
+sum(x1[2]<x1[3])
+sum(x2[2]<x2[3])
+sum(x3[2]<x3[3])
+sum(x4[2]<x4[3])
+sum(x5[2]<x5[3])
